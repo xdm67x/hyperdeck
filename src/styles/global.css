@@ -1,12 +1,12 @@
 @import 'tailwindcss';
 
 @theme {
-    --color-ink: #f6f1e8;
-    --color-ink-2: #efe9dd;
-    --color-panel: #fffdf8;
-    --color-panel-2: #e9e1d2;
-    --color-line: #ddd3c1;
-    --color-line-2: #c8bca4;
+    --color-ink: #f8f7f4;
+    --color-ink-2: #f0eee8;
+    --color-panel: #fffefc;
+    --color-panel-2: #eae7df;
+    --color-line: #e6e2d8;
+    --color-line-2: #d3cec0;
     --color-bone: #221d15;
     --color-bone-dim: #5c5342;
     --color-mute: #8d8370;
@@ -22,6 +22,22 @@
     --animate-rise: rise 0.5s cubic-bezier(0.2, 0.9, 0.25, 1) both;
     --animate-pulse-dot: pulse-dot 1.6s ease-in-out infinite;
     --animate-flicker: flicker 4s linear infinite;
+}
+
+[data-theme='dark'] {
+    --color-ink: #14110b;
+    --color-ink-2: #1a1710;
+    --color-panel: #201c14;
+    --color-panel-2: #2a251b;
+    --color-line: #2f2a20;
+    --color-line-2: #463f30;
+    --color-bone: #ece5d8;
+    --color-bone-dim: #b3a894;
+    --color-mute: #7d7362;
+    --color-signal: #ff6a2b;
+    --color-signal-dim: #ff8a50;
+    --color-amber: #ffc46b;
+    --color-mint: #7fdca3;
 }
 
 @keyframes rise {
@@ -83,7 +99,7 @@ body {
     inset: 0;
     pointer-events: none;
     z-index: 60;
-    opacity: 0.035;
+    opacity: 0.025;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 

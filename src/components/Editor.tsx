@@ -1,6 +1,5 @@
 import { computed, signal } from '@preact/signals'
 import { useEffect, useRef } from 'preact/hooks'
-import type { ComponentChildren } from 'preact'
 import type { Deck, Slide } from '../db/schema.ts'
 
 import { openPresentation } from '../lib/present.ts'
@@ -22,6 +21,7 @@ import { navigate } from '../state.ts'
 import { SlideCanvas } from './SlideCanvas.tsx'
 import { CodeEditor, type CodeLanguage } from './CodeEditor.tsx'
 import { MarkdownToolbar } from './MarkdownToolbar.tsx'
+import { openContextMenu } from './ContextMenu.tsx'
 
 const deck = signal<Deck | null>(null)
 const slides = signal<Slide[]>([])
@@ -250,6 +250,31 @@ export function Editor({ deckId }: { deckId: string }) {
                                           ? 'border-signal bg-panel'
                                           : 'border-line hover:border-line-2'
                                 } ${dragId.value === s.id ? 'opacity-40' : ''}`}
+                                title="Right-click for slide actions · drag to reorder"
+                                onContextMenu={(e) =>
+                                    openContextMenu(e, [
+                                        {
+                                            label: 'Duplicate slide',
+                                            onSelect: () => onDuplicateSlide(s.id),
+                                        },
+                                        {
+                                            label: 'Move up',
+                                            disabled: i === 0,
+                                            onSelect: () => onMoveSlide(s.id, -1),
+                                        },
+                                        {
+                                            label: 'Move down',
+                                            disabled: i === slides.value.length - 1,
+                                            onSelect: () => onMoveSlide(s.id, 1),
+                                        },
+                                        'separator',
+                                        {
+                                            label: 'Delete slide',
+                                            onSelect: () => onDeleteSlide(s.id),
+                                            danger: true,
+                                        },
+                                    ])
+                                }
                             >
                                 <button
                                     class="block w-full"
@@ -277,35 +302,6 @@ export function Editor({ deckId }: { deckId: string }) {
                                     ) : (
                                         <span class="truncate text-xs text-bone-dim">{s.name}</span>
                                     )}
-                                    <span class="ml-auto flex shrink-0 items-center gap-0.5">
-                                        <RailBtn
-                                            title="Move up"
-                                            disabled={i === 0}
-                                            onClick={() => onMoveSlide(s.id, -1)}
-                                        >
-                                            &uarr;
-                                        </RailBtn>
-                                        <RailBtn
-                                            title="Move down"
-                                            disabled={i === slides.value.length - 1}
-                                            onClick={() => onMoveSlide(s.id, 1)}
-                                        >
-                                            &darr;
-                                        </RailBtn>
-                                        <RailBtn
-                                            title="Duplicate slide"
-                                            onClick={() => onDuplicateSlide(s.id)}
-                                        >
-                                            &#x2398;
-                                        </RailBtn>
-                                        <RailBtn
-                                            title="Delete slide"
-                                            danger
-                                            onClick={() => onDeleteSlide(s.id)}
-                                        >
-                                            &times;
-                                        </RailBtn>
-                                    </span>
                                 </div>
                             </div>
                         ))}
@@ -385,7 +381,7 @@ export function Editor({ deckId }: { deckId: string }) {
                             />
                         ) : null}
                     </div>
-                    <div class="chip flex h-8 shrink-0 items-center justify-between border-t border-line px-3 text-mute">
+                    <div class="chip flex h-8 shrink-0 items-center border-t border-line px-3 text-mute">
                         <span>
                             {tab.value === 'deck'
                                 ? 'global stylesheet — scoped into every slide'
@@ -393,7 +389,6 @@ export function Editor({ deckId }: { deckId: string }) {
                                   ? 'slide stylesheet — scoped to this slide'
                                   : 'markdown — rendered live on the canvas'}
                         </span>
-                        <span>auto-save on</span>
                     </div>
                 </section>
             </div>
@@ -423,37 +418,5 @@ function SaveBadge() {
             />
             {label}
         </span>
-    )
-}
-
-function RailBtn({
-    children,
-    onClick,
-    title,
-    disabled,
-    danger,
-}: {
-    children: ComponentChildren
-    onClick: () => void
-    title: string
-    disabled?: boolean
-    danger?: boolean
-}) {
-    return (
-        <button
-            class={`chip rounded-sm px-1.5 py-0.5 leading-none transition ${
-                disabled
-                    ? 'text-line-2'
-                    : danger
-                      ? 'text-mute hover:text-signal'
-                      : 'text-mute hover:text-bone'
-            }`}
-            onClick={onClick}
-            title={title}
-            disabled={disabled}
-            type="button"
-        >
-            {children}
-        </button>
     )
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { signal } from '@preact/signals'
 import type { Deck, Slide } from '../db/schema.ts'
 import {
@@ -6,6 +6,7 @@ import {
     createBlankDeck,
     deleteDeck,
     duplicateDeck,
+    updateDeck,
     exportDeck,
     exportDeckMarkdown,
     importDeck,
@@ -16,20 +17,39 @@ import {
 } from '../db/repository.ts'
 import { navigate } from '../state.ts'
 import { openPresentation } from '../lib/present.ts'
+import { theme, toggleTheme } from '../lib/theme.ts'
 import { SlideCanvas } from './SlideCanvas.tsx'
+import { openContextMenu } from './ContextMenu.tsx'
+
+/** How many slides of each deck are rendered live on the dashboard. */
+const PREVIEW_SLIDES = 5
+
+interface DeckPreview {
+    /** First slide + up to PREVIEW_SLIDES - 1 followers. */
+    slides: Slide[]
+    total: number
+}
 
 const decks = signal<Deck[]>([])
-const previews = signal<Record<string, Slide | undefined>>({})
+const previews = signal<Record<string, DeckPreview | undefined>>({})
 const loading = signal(true)
 
 export function Dashboard() {
+    const importRef = useRef<HTMLInputElement>(null)
+
     async function refresh() {
         const all = await listDecks()
         decks.value = all
-        const firsts = await Promise.all(
-            all.map(async (d) => [d.id, (await getSlides(d.id))[0]] as const),
+        const entries = await Promise.all(
+            all.map(async (d) => {
+                const slides = await getSlides(d.id)
+                return [
+                    d.id,
+                    { slides: slides.slice(0, PREVIEW_SLIDES), total: slides.length },
+                ] as const
+            }),
         )
-        previews.value = Object.fromEntries(firsts)
+        previews.value = Object.fromEntries(entries)
         loading.value = false
     }
 
@@ -63,6 +83,14 @@ export function Dashboard() {
         await refresh()
     }
 
+    async function onRename(deck: Deck, title: string) {
+        const next = title.trim()
+        if (next && next !== deck.title) {
+            await updateDeck(deck.id, { title: next })
+            await refresh()
+        }
+    }
+
     async function onDelete(deck: Deck) {
         if (!confirm(`Delete "${deck.title}"? This cannot be undone.`)) return
         await deleteDeck(deck.id)
@@ -92,65 +120,51 @@ export function Dashboard() {
         download(`${slug(deck)}.hyperdeck.md`, md, 'text/markdown')
     }
 
-    return (
-        <div class="grain flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <header class="border-b border-line px-10 pb-10 pt-14">
-                <div class="mx-auto w-full max-w-6xl">
-                    <div class="flex items-end justify-between gap-6">
-                        <div class="animate-rise">
-                            <div class="chip mb-4 flex items-center gap-2 text-mute">
-                                <span class="inline-block h-2 w-2 animate-pulse-dot rounded-full bg-signal" />
-                                deck studio — local, no backend
-                            </div>
-                            <h1 class="font-serif text-6xl leading-none tracking-tight">
-                                Hyper<span class="italic text-signal">Deck</span>
-                            </h1>
-                            <p class="mt-4 max-w-md text-[15px] leading-relaxed text-bone-dim">
-                                Build presentations in plain markdown, styled with scoped CSS.
-                                Animate anything, persist everything to IndexedDB, and drive a
-                                two-window presenter cockpit over BroadcastChannel.
-                            </p>
-                        </div>
-                        <div class="flex flex-col items-end gap-3 pb-1">
-                            <div class="flex gap-2">
-                                <button
-                                    class="chip rounded-sm border border-signal bg-signal px-5 py-3 font-bold text-ink transition hover:bg-amber"
-                                    onClick={() => onNewDeck(false)}
-                                >
-                                    New deck
-                                </button>
-                                <button
-                                    class="chip rounded-sm border border-line-2 px-5 py-3 text-bone-dim transition hover:border-bone-dim hover:text-bone"
-                                    onClick={() => onNewDeck(true)}
-                                >
-                                    Blank deck
-                                </button>
-                            </div>
-                            <label class="chip cursor-pointer rounded-sm border border-dashed border-line-2 px-5 py-2 text-mute transition hover:border-signal hover:text-signal">
-                                import .json
-                                <input
-                                    type="file"
-                                    accept=".json,.md,application/json,text/markdown"
-                                    class="hidden"
-                                    onChange={(e) => {
-                                        const f = e.currentTarget.files?.[0]
-                                        if (f) onImport(f)
-                                        e.currentTarget.value = ''
-                                    }}
-                                />
-                            </label>
-                        </div>
-                    </div>
-                </div>
-            </header>
+    // deck cards stop propagation on their own right-click, so this only
+    // fires on the empty canvas — the app's global menu
+    function onBackgroundMenu(e: Parameters<typeof openContextMenu>[0]) {
+        openContextMenu(e, [
+            { label: 'New deck — guided starter', onSelect: () => onNewDeck(false) },
+            { label: 'Blank deck', onSelect: () => onNewDeck(true) },
+            'separator',
+            { label: 'Import deck (.json / .md)…', onSelect: () => importRef.current?.click() },
+            'separator',
+            {
+                label: theme.value === 'dark' ? 'Switch to light mode' : 'Switch to dark mode',
+                onSelect: () => toggleTheme(),
+            },
+        ])
+    }
 
-            <main class="mx-auto w-full max-w-6xl flex-1 px-10 py-10">
+    return (
+        <div
+            class="grain flex min-h-0 flex-1 flex-col overflow-y-auto"
+            onContextMenu={onBackgroundMenu}
+        >
+            <input
+                ref={importRef}
+                type="file"
+                accept=".json,.md,application/json,text/markdown"
+                class="hidden"
+                onChange={(e) => {
+                    const f = e.currentTarget.files?.[0]
+                    if (f) onImport(f)
+                    e.currentTarget.value = ''
+                }}
+            />
+
+            <main class="flex-1 px-6 pb-10 pt-8 lg:px-10">
                 {loading.value ? (
-                    <p class="chip text-mute">loading decks…</p>
+                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                        <SkeletonCard />
+                        <SkeletonCard />
+                        <SkeletonCard />
+                        <SkeletonCard />
+                    </div>
                 ) : decks.value.length === 0 ? (
                     <EmptyState />
                 ) : (
-                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                         {decks.value.map((deck, i) => (
                             <DeckCard
                                 key={deck.id}
@@ -160,6 +174,7 @@ export function Dashboard() {
                                 onOpen={() => navigate({ view: 'editor', deckId: deck.id })}
                                 onPresent={() => openPresentation(deck.id)}
                                 onDuplicate={() => onDuplicate(deck.id)}
+                                onRename={(title) => onRename(deck, title)}
                                 onExport={() => onExport(deck)}
                                 onExportMarkdown={() => onExportMarkdown(deck)}
                                 onDelete={() => onDelete(deck)}
@@ -168,21 +183,27 @@ export function Dashboard() {
                     </div>
                 )}
             </main>
-
-            <footer class="mx-auto w-full max-w-6xl px-10 pb-10">
-                <p class="chip text-mute">
-                    hyperdeck mvp · deno + vite + preact · data lives in your browser
-                </p>
-            </footer>
         </div>
     )
 }
 
 function EmptyState() {
     return (
-        <div class="dotgrid flex h-64 flex-col items-center justify-center gap-4 rounded-md border border-dashed border-line-2">
-            <p class="font-serif text-2xl italic text-bone-dim">No decks yet.</p>
-            <p class="chip text-mute">hit “new deck” — it comes with a guided starter</p>
+        <div class="dotgrid flex h-80 flex-col items-center justify-center gap-4 rounded-md border border-dashed border-line-2">
+            <p class="font-serif text-3xl italic text-bone-dim">Nothing here yet.</p>
+            <p class="chip text-bone-dim">
+                right-click anywhere to create a deck · import a .json or .md file
+            </p>
+        </div>
+    )
+}
+
+function SkeletonCard() {
+    return (
+        <div class="animate-pulse">
+            <div class="aspect-video rounded-md border border-line bg-ink-2" />
+            <div class="mt-4 h-3 w-2/3 rounded-sm bg-ink-2" />
+            <div class="mt-2 h-2 w-1/3 rounded-sm bg-ink-2" />
         </div>
     )
 }
@@ -194,102 +215,185 @@ function DeckCard({
     onOpen,
     onPresent,
     onDuplicate,
+    onRename,
     onExport,
     onExportMarkdown,
     onDelete,
 }: {
     deck: Deck
-    preview?: Slide
+    preview?: DeckPreview
     index: number
     onOpen: () => void
     onPresent: () => void
     onDuplicate: () => void
+    onRename: (title: string) => void
     onExport: () => void
     onExportMarkdown: () => void
     onDelete: () => void
 }) {
-    const [confirming, setConfirming] = useState(false)
+    const first = preview?.slides[0]
+    const rest = preview?.slides.slice(1) ?? []
+    const total = preview?.total ?? 0
+    const overflow = Math.max(0, total - (preview?.slides.length ?? 0))
+    const [renaming, setRenaming] = useState(false)
+    const [draft, setDraft] = useState(deck.title)
+    // guards the unmount blur + Escape paths against double commits
+    const renameActiveRef = useRef(false)
+
+    function startRename() {
+        renameActiveRef.current = true
+        setDraft(deck.title)
+        setRenaming(true)
+    }
+
+    function commitRename() {
+        if (!renameActiveRef.current) return
+        renameActiveRef.current = false
+        const next = draft.trim()
+        setRenaming(false)
+        if (next && next !== deck.title) onRename(next)
+    }
+
+    function cancelRename() {
+        renameActiveRef.current = false
+        setRenaming(false)
+    }
+
     return (
         <article
-            class="group animate-rise rounded-md border border-line bg-panel transition hover:border-line-2 hover:shadow-[0_18px_44px_-18px_rgba(34,29,21,0.3)]"
-            style={{ animationDelay: `${index * 60}ms` }}
+            class="group animate-rise rounded-md border border-line bg-panel transition hover:border-signal/60 hover:-translate-y-0.5"
+            style={{ animationDelay: `${index * 50}ms` }}
+            title="Right-click for deck actions"
+            onContextMenu={(e) =>
+                openContextMenu(e, [
+                    { label: 'Open in editor', onSelect: onOpen },
+                    { label: 'Present', onSelect: onPresent },
+                    { label: 'Rename deck…', onSelect: startRename },
+                    'separator',
+                    { label: 'Duplicate deck', onSelect: onDuplicate },
+                    { label: 'Export .json', onSelect: onExport },
+                    { label: 'Export .md', onSelect: onExportMarkdown },
+                    'separator',
+                    { label: 'Delete deck', onSelect: onDelete, danger: true },
+                ])
+            }
         >
-            <button class="block w-full" onClick={onOpen} title="Open in editor">
-                {preview ? (
+            {/* Live slide — the card's whole point */}
+            <div class="relative overflow-hidden rounded-t-md">
+                {first ? (
                     <SlideCanvas
-                        scopeId={`dash_${preview.id}`}
-                        markdown={preview.markdown}
-                        css={preview.css}
+                        scopeId={`dash_${first.id}`}
+                        markdown={first.markdown}
+                        css={first.css}
                         globalCss={deck.globalCss}
                         className="rounded-t-md"
                     />
                 ) : (
-                    <div class="aspect-video rounded-t-md bg-ink-2" />
+                    <div class="dotgrid aspect-video bg-ink-2" />
                 )}
-            </button>
-            <div class="flex flex-col gap-3 border-t border-line p-4">
-                <div class="flex items-start justify-between gap-3">
-                    <div class="min-w-0">
-                        <h2 class="truncate text-lg font-bold leading-tight">{deck.title}</h2>
-                        <p class="chip mt-1 text-mute">
-                            {new Date(deck.updatedAt).toLocaleDateString()} · edited{' '}
-                            {new Date(deck.updatedAt).toLocaleTimeString([], {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                            })}
-                        </p>
-                    </div>
+
+                <button
+                    class="absolute inset-0 h-full w-full cursor-pointer"
+                    onClick={onOpen}
+                    title={`Open “${deck.title}” in the editor`}
+                    aria-label={`Open ${deck.title} in the editor`}
+                />
+
+                {total > 0 && (
+                    <span class="chip pointer-events-none absolute left-3 top-3 rounded-sm bg-ink/75 px-2 py-1 text-bone tabular-nums backdrop-blur-sm">
+                        {total} slide{total === 1 ? '' : 's'}
+                    </span>
+                )}
+
+                {/* hover / focus actions over the slide */}
+                <div class="pointer-events-none absolute inset-0 flex items-end justify-end gap-2 bg-gradient-to-t from-ink/70 via-transparent to-transparent p-3 opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100">
                     <button
-                        class="chip shrink-0 rounded-sm border border-signal-dim px-3 py-1.5 text-signal transition hover:bg-signal hover:text-ink"
-                        onClick={onPresent}
+                        class="chip pointer-events-auto rounded-sm bg-signal px-4 py-1.5 font-bold text-ink transition hover:bg-amber"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onPresent()
+                        }}
                         title="Open stage + presenter cockpit"
                     >
                         present
                     </button>
+                    <button
+                        class="chip pointer-events-auto rounded-sm bg-bone px-4 py-1.5 font-bold text-ink transition hover:opacity-90"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onOpen()
+                        }}
+                    >
+                        open
+                    </button>
                 </div>
-                <div class="flex items-center gap-2 opacity-70 transition group-hover:opacity-100">
-                    <button
-                        class="chip rounded-sm px-2 py-1 text-mute transition hover:text-bone"
-                        onClick={onDuplicate}
-                    >
-                        duplicate
-                    </button>
-                    <button
-                        class="chip rounded-sm px-2 py-1 text-mute transition hover:text-bone"
-                        onClick={onExport}
-                    >
-                        json
-                    </button>
-                    <button
-                        class="chip rounded-sm px-2 py-1 text-mute transition hover:text-bone"
-                        onClick={onExportMarkdown}
-                        title="Export as single markdown file"
-                    >
-                        md
-                    </button>
-                    {confirming ? (
-                        <span class="ml-auto flex items-center gap-2">
-                            <button
-                                class="chip rounded-sm bg-signal px-2 py-1 font-bold text-ink"
-                                onClick={onDelete}
-                            >
-                                delete?
-                            </button>
-                            <button
-                                class="chip rounded-sm px-2 py-1 text-mute"
-                                onClick={() => setConfirming(false)}
-                            >
-                                no
-                            </button>
-                        </span>
-                    ) : (
+            </div>
+
+            {/* The rest of the deck, at a glance */}
+            {(rest.length > 0 || overflow > 0) && (
+                <div class="flex gap-1.5 border-b border-line px-3 py-2.5">
+                    {rest.map((slide) => (
                         <button
-                            class="chip ml-auto rounded-sm px-2 py-1 text-mute transition hover:text-signal"
-                            onClick={() => setConfirming(true)}
+                            key={slide.id}
+                            class="min-w-0 flex-1 overflow-hidden rounded-sm border border-line transition hover:border-signal/60"
+                            onClick={onOpen}
+                            title={`Open at “${slide.name}”`}
                         >
-                            delete
+                            <SlideCanvas
+                                scopeId={`dashmini_${slide.id}`}
+                                markdown={slide.markdown}
+                                css={slide.css}
+                                globalCss={deck.globalCss}
+                                className="rounded-sm"
+                            />
                         </button>
+                    ))}
+                    {overflow > 0 && (
+                        <span class="chip flex aspect-video flex-1 items-center justify-center rounded-sm border border-dashed border-line-2 text-mute tabular-nums">
+                            +{overflow}
+                        </span>
                     )}
+                </div>
+            )}
+
+            {/* Meta */}
+            <div class="flex items-center gap-3 px-4 py-3">
+                <div class="min-w-0 flex-1">
+                    {renaming ? (
+                        <input
+                            class="deck-title w-full rounded-sm border border-signal bg-ink px-2 py-1 text-[15px] font-bold outline-none"
+                            value={draft}
+                            spellcheck={false}
+                            ref={(el) => {
+                                if (el) {
+                                    el.focus()
+                                    el.select()
+                                }
+                            }}
+                            onInput={(e) => setDraft(e.currentTarget.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') commitRename()
+                                else if (e.key === 'Escape') cancelRename()
+                            }}
+                            onBlur={commitRename}
+                        />
+                    ) : (
+                        <h3 class="deck-title truncate text-[15px] font-bold leading-tight">
+                            {deck.title}
+                        </h3>
+                    )}
+                    <p class="chip mt-0.5 text-bone-dim">
+                        edited{' '}
+                        {new Date(deck.updatedAt).toLocaleDateString([], {
+                            month: 'short',
+                            day: 'numeric',
+                        })}
+                        ,{' '}
+                        {new Date(deck.updatedAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                        })}
+                    </p>
                 </div>
             </div>
         </article>
