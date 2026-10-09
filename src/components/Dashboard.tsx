@@ -153,7 +153,13 @@ export function Dashboard() {
                 }}
             />
 
-            <main class="flex-1 px-6 pb-10 pt-8 lg:px-10">
+            <main
+                class={
+                    loading.value || decks.value.length > 0
+                        ? 'flex-1 px-6 pb-10 pt-8 lg:px-10'
+                        : 'dotgrid flex flex-1 flex-col items-center justify-center'
+                }
+            >
                 {loading.value ? (
                     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                         <SkeletonCard />
@@ -189,7 +195,7 @@ export function Dashboard() {
 
 function EmptyState() {
     return (
-        <div class="dotgrid flex h-80 flex-col items-center justify-center gap-4 rounded-md border border-dashed border-line-2">
+        <div class="flex flex-col items-center gap-4">
             <p class="font-serif text-3xl italic text-bone-dim">Nothing here yet.</p>
             <p class="chip text-bone-dim">
                 right-click anywhere to create a deck · import a .json or .md file
