@@ -1,0 +1,191 @@
+@import 'tailwindcss';
+
+@theme {
+    --color-ink: #f6f1e8;
+    --color-ink-2: #efe9dd;
+    --color-panel: #fffdf8;
+    --color-panel-2: #e9e1d2;
+    --color-line: #ddd3c1;
+    --color-line-2: #c8bca4;
+    --color-bone: #221d15;
+    --color-bone-dim: #5c5342;
+    --color-mute: #8d8370;
+    --color-signal: #ff5c1f;
+    --color-signal-dim: #d94e14;
+    --color-amber: #a86a00;
+    --color-mint: #157a48;
+
+    --font-sans: 'Archivo', ui-sans-serif, system-ui, sans-serif;
+    --font-serif: 'Instrument Serif', ui-serif, Georgia, serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+    --animate-rise: rise 0.5s cubic-bezier(0.2, 0.9, 0.25, 1) both;
+    --animate-pulse-dot: pulse-dot 1.6s ease-in-out infinite;
+    --animate-flicker: flicker 4s linear infinite;
+}
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse-dot {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.25;
+    }
+}
+
+@keyframes flicker {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    96% {
+        opacity: 1;
+    }
+    97% {
+        opacity: 0.82;
+    }
+    98% {
+        opacity: 1;
+    }
+}
+
+html,
+body {
+    height: 100%;
+    background: var(--color-ink);
+    color: var(--color-bone);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+}
+
+#app {
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* film grain over the whole app shell */
+.grain::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 60;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.glass {
+    background: color-mix(in srgb, var(--color-panel) 62%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--color-line-2);
+}
+
+.dotgrid {
+    background-image: radial-gradient(circle at 1px 1px, var(--color-line-2) 1px, transparent 0);
+    background-size: 22px 22px;
+}
+
+/* mono uppercase chip used across chrome */
+.chip {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+}
+
+/* thin scrollbars that match the shell */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-2) transparent;
+}
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+    background: var(--color-line-2);
+    border-radius: 4px;
+}
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::selection {
+    background: var(--color-signal);
+    color: var(--color-ink);
+}
+
+/* ---- Slide rendering defaults ---- */
+
+/* speaker notes never appear on the canvas / stage */
+[data-slide-scope] aside.notes {
+    display: none;
+}
+
+[data-slide-scope] {
+    width: 100%;
+    height: 100%;
+}
+
+/* markdown slides are wrapped in an auto `.slide` root by SlideCanvas */
+.slide-host {
+    width: 100%;
+    height: 100%;
+}
+.slide-host > div {
+    width: 100%;
+    height: 100%;
+}
+[data-slide-scope] .slide {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+/* CodeMirror shell theming */
+.cm-editor {
+    height: 100%;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: transparent;
+}
+.cm-editor .cm-scroller {
+    font-family: var(--font-mono) !important;
+    line-height: 1.6;
+}
+.cm-editor.cm-focused {
+    outline: none !important;
+}
+.cm-gutters {
+    background: transparent !important;
+    border-right: 1px solid var(--color-line) !important;
+    color: var(--color-mute) !important;
+}
+.cm-activeLine {
+    background: color-mix(in srgb, var(--color-panel-2) 55%, transparent) !important;
+}
+.cm-selectionBackground,
+.cm-editor .cm-selectionBackground {
+    background: color-mix(in srgb, var(--color-signal) 30%, transparent) !important;
+}
+.cm-cursor {
+    border-left-color: var(--color-signal) !important;
+}
+.cm-tooltip {
+    background: var(--color-panel-2) !important;
+    border: 1px solid var(--color-line-2) !important;
+}
