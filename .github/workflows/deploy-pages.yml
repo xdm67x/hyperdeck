@@ -25,7 +25,8 @@ jobs:
       - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
 
       - name: Build
-        run: mise run build
+        # project pages serve under /hyperdeck/, so override vite's root base
+        run: mise run build -- --base=/hyperdeck/
 
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
