@@ -1,0 +1,26 @@
+[tools]
+deno = "2.9.7"
+
+[tasks.build]
+description = "Build for production"
+run = "deno task build"
+
+[tasks.dev]
+description = "Start the dev server"
+run = "deno task dev"
+
+[tasks.preview]
+description = "Preview the production build"
+run = "deno task preview"
+
+[tasks.lint]
+description = "Lint with oxlint"
+run = "deno task lint"
+
+[tasks.fmt]
+description = "Format with oxfmt"
+run = "deno task fmt"
+
+[tasks."fmt:check"]
+description = "Check formatting without writing"
+run = "deno task fmt:check"
