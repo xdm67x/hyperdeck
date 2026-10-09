@@ -245,6 +245,19 @@ function DeckCard({
     const [draft, setDraft] = useState(deck.title)
     // guards the unmount blur + Escape paths against double commits
     const renameActiveRef = useRef(false)
+    const renameInputRef = useRef<HTMLInputElement>(null)
+
+    // focus/select once when the field mounts — an inline ref callback would
+    // re-run every render and select-all after each keystroke
+    useEffect(() => {
+        if (renaming) {
+            const el = renameInputRef.current
+            if (el) {
+                el.focus()
+                el.select()
+            }
+        }
+    }, [renaming])
 
     function startRename() {
         renameActiveRef.current = true
@@ -370,12 +383,7 @@ function DeckCard({
                             class="deck-title w-full rounded-sm border border-signal bg-ink px-2 py-1 text-[15px] font-bold outline-none"
                             value={draft}
                             spellcheck={false}
-                            ref={(el) => {
-                                if (el) {
-                                    el.focus()
-                                    el.select()
-                                }
-                            }}
+                            ref={renameInputRef}
                             onInput={(e) => setDraft(e.currentTarget.value)}
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter') commitRename()
