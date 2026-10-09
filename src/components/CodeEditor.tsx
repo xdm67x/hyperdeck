@@ -1,9 +1,7 @@
-import { useEffect, useRef } from 'preact/hooks'
-import { basicSetup } from 'codemirror'
-import { EditorView } from '@codemirror/view'
-import { Compartment, EditorState } from '@codemirror/state'
-import { markdown } from '@codemirror/lang-markdown'
-import { css } from '@codemirror/lang-css'
+import { useEffect, useRef, useState } from 'preact/hooks'
+import { effect } from '@preact/signals'
+import { theme } from '../lib/theme.ts'
+import type { CodeEditorInstance } from '../lib/monaco.ts'
 
 export type CodeLanguage = 'markdown' | 'css'
 
@@ -11,69 +9,83 @@ interface CodeEditorProps {
     value: string
     language: CodeLanguage
     onChange: (value: string) => void
-    /** Notified once with the live EditorView, so toolbars can act on it. */
-    onViewReady?: (view: EditorView | null) => void
 }
 
 /**
- * CodeMirror 6 wrapper. Emits debounced-free change events; persistence
- * debouncing is owned by the Editor (single save pipeline per keystroke).
+ * Monaco (the VS Code editor) wrapper. Monaco is heavy, so it is loaded
+ * lazily — the main bundle only carries this shell. Theme switches follow
+ * the app signal and map onto Monaco's built-in VS Code themes (vs/vs-dark).
  */
-export function CodeEditor({ value, language, onChange, onViewReady }: CodeEditorProps) {
+export function CodeEditor({ value, language, onChange }: CodeEditorProps) {
     const hostRef = useRef<HTMLDivElement>(null)
-    const viewRef = useRef<EditorView | null>(null)
-    const langComp = useRef(new Compartment())
+    const editorRef = useRef<CodeEditorInstance | null>(null)
     const onChangeRef = useRef(onChange)
     onChangeRef.current = onChange
+    const [ready, setReady] = useState(false)
 
     useEffect(() => {
-        const host = hostRef.current
-        if (!host) return
-
-        const view = new EditorView({
-            parent: host,
-            state: EditorState.create({
-                doc: value,
-                extensions: [
-                    basicSetup,
-                    langComp.current.of(language === 'markdown' ? markdown() : css()),
-                    EditorView.theme({
-                        '&': { height: '100%', backgroundColor: 'transparent' },
-                        '.cm-content': {
-                            caretColor: '#ff5c1f',
-                            fontFamily: '"JetBrains Mono", monospace',
-                        },
-                        '.cm-gutters': { backgroundColor: 'transparent' },
-                    }),
-                    EditorView.updateListener.of((update) => {
-                        if (update.docChanged) {
-                            onChangeRef.current(update.state.doc.toString())
-                        }
-                    }),
-                ],
-            }),
+        let disposed = false
+        let editor: CodeEditorInstance | null = null
+        void import('../lib/monaco.ts').then(({ setupMonaco, applyMonacoTheme }) => {
+            const monaco = setupMonaco()
+            if (disposed || !hostRef.current) return
+            applyMonacoTheme(theme.value === 'dark')
+            editor = monaco.editor.create(hostRef.current, {
+                value,
+                language,
+                automaticLayout: true,
+                fontFamily: '"JetBrains Mono", ui-monospace, monospace',
+                fontSize: 13,
+                lineHeight: 21,
+                minimap: { enabled: false },
+                scrollBeyondLastLine: false,
+                wordWrap: 'on',
+                padding: { top: 12, bottom: 12 },
+                renderLineHighlight: 'all',
+                smoothScrolling: true,
+                scrollbar: { verticalScrollbarSize: 8, horizontalScrollbarSize: 8 },
+                overviewRulerLanes: 0,
+                hideCursorInOverviewRuler: true,
+            })
+            editorRef.current = editor
+            // Expose the instance for integration tests, attached to the DOM.
+            ;(editor.getDomNode() as HTMLElement & { Monaco?: CodeEditorInstance }).Monaco = editor
+            editor.onDidChangeModelContent(() => onChangeRef.current(editor!.getValue()))
+            setReady(true)
         })
-        viewRef.current = view
-        // Expose the view for integration tests, mirroring CodeMirror's dev-mode convention.
-        ;(view.dom as HTMLElement & { CodeMirror?: EditorView }).CodeMirror = view
-        onViewReady?.(view)
         return () => {
-            view.destroy()
-            viewRef.current = null
-            onViewReady?.(null)
+            disposed = true
+            editor?.dispose()
+            editorRef.current = null
         }
     }, [])
 
-    // Slide switch or tab switch: replace the doc and reconfigure the language.
+    // Follow light/dark mode toggle with Monaco's VS Code themes.
     useEffect(() => {
-        const view = viewRef.current
-        if (!view) return
-        if (view.state.doc.toString() === value) return
-        view.dispatch({
-            changes: { from: 0, to: view.state.doc.length, insert: value },
-            effects: langComp.current.reconfigure(language === 'markdown' ? markdown() : css()),
+        if (!ready) return
+        let disposer = () => {}
+        void import('../lib/monaco.ts').then(({ applyMonacoTheme }) => {
+            disposer = effect(() => applyMonacoTheme(theme.value === 'dark'))
         })
-    }, [value, language])
+        return () => disposer()
+    }, [ready])
 
-    return <div ref={hostRef} class="h-full min-h-0 overflow-hidden" />
+    // External doc replacement (slide switch without a remount).
+    useEffect(() => {
+        const editor = editorRef.current
+        if (!editor || editor.getValue() === value) return
+        const sel = editor.getSelection()
+        editor.setValue(value)
+        if (sel) editor.setSelection(sel)
+    }, [value])
+
+    return (
+        <div ref={hostRef} class="h-full min-h-0 overflow-hidden">
+            {!ready && (
+                <div class="chip flex h-full items-center justify-center text-mute">
+                    loading editor…
+                </div>
+            )}
+        </div>
+    )
 }

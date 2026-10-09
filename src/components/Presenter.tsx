@@ -136,7 +136,6 @@ export function Presenter({ deckId }: { deckId: string }) {
                 <section class="flex min-h-0 flex-1 flex-col p-5">
                     <div class="chip mb-3 flex items-center justify-between text-mute">
                         <span>on stage</span>
-                        <span>{current?.name}</span>
                     </div>
                     <div class="flex min-h-0 flex-1 items-center justify-center">
                         {current ? (

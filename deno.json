@@ -9,6 +9,8 @@
         "fmt:check": "deno run -A npm:oxfmt --check ."
     },
     "imports": {
+        "highlight.js": "npm:highlight.js@^11.12.0",
+        "monaco-editor": "npm:monaco-editor@^0.52.2",
         "preact": "npm:preact@^10.26.2",
         "preact/jsx-runtime": "npm:preact@^10.26.2/jsx-runtime",
         "preact/hooks": "npm:preact@^10.26.2/hooks",
@@ -19,13 +21,7 @@
         "@preact/preset-vite": "npm:@preact/preset-vite@^2.9.6",
         "tailwindcss": "npm:tailwindcss@^4.1.13",
         "@tailwindcss/vite": "npm:@tailwindcss/vite@^4.1.13",
-        "codemirror": "npm:codemirror@^6.0.2",
         "marked": "npm:marked@^18.1.0",
-        "@codemirror/lang-markdown": "npm:@codemirror/lang-markdown@^6.5.2",
-        "@codemirror/lang-css": "npm:@codemirror/lang-css@^6.3.1",
-        "@codemirror/view": "npm:@codemirror/view@^6.38.6",
-        "@codemirror/state": "npm:@codemirror/state@^6.5.2",
-        "@codemirror/language": "npm:@codemirror/language@^6.11.0",
         "oxlint": "npm:oxlint@^1.87.0",
         "oxfmt": "npm:oxfmt@^0.72.0"
     },

@@ -172,36 +172,60 @@ body {
     box-sizing: border-box;
 }
 
-/* CodeMirror shell theming */
-.cm-editor {
-    height: 100%;
-    font-family: var(--font-mono);
-    font-size: 13px;
+/* ---- Slide code highlighting (marked renderer emits hljs-* classes) ---- */
+/* Token colors reuse the theme palette so slides and the editor share one
+   syntax scheme that flips with light/dark mode. Per-slide CSS can still
+   override tokens — scoped rules load after these and match with equal
+   specificity. */
+[data-slide-scope] pre code.hljs {
+    display: block;
+    color: inherit;
     background: transparent;
 }
-.cm-editor .cm-scroller {
-    font-family: var(--font-mono) !important;
-    line-height: 1.6;
+[data-slide-scope] .hljs-keyword,
+[data-slide-scope] .hljs-selector-tag,
+[data-slide-scope] .hljs-doctag,
+[data-slide-scope] .hljs-section,
+[data-slide-scope] .hljs-tag,
+[data-slide-scope] .hljs-name,
+[data-slide-scope] .hljs-selector-id,
+[data-slide-scope] .hljs-selector-class {
+    color: var(--color-signal-dim);
 }
-.cm-editor.cm-focused {
-    outline: none !important;
+[data-slide-scope] .hljs-string,
+[data-slide-scope] .hljs-regexp,
+[data-slide-scope] .hljs-addition,
+[data-slide-scope] .hljs-built_in,
+[data-slide-scope] .hljs-type,
+[data-slide-scope] .hljs-selector-attr {
+    color: var(--color-mint);
 }
-.cm-gutters {
-    background: transparent !important;
-    border-right: 1px solid var(--color-line) !important;
-    color: var(--color-mute) !important;
+[data-slide-scope] .hljs-number,
+[data-slide-scope] .hljs-symbol,
+[data-slide-scope] .hljs-bullet,
+[data-slide-scope] .hljs-attr,
+[data-slide-scope] .hljs-attribute,
+[data-slide-scope] .hljs-variable,
+[data-slide-scope] .hljs-template-variable,
+[data-slide-scope] .hljs-title,
+[data-slide-scope] .hljs-meta {
+    color: var(--color-amber);
 }
-.cm-activeLine {
-    background: color-mix(in srgb, var(--color-panel-2) 55%, transparent) !important;
+[data-slide-scope] .hljs-comment,
+[data-slide-scope] .hljs-quote,
+[data-slide-scope] .hljs-deletion {
+    color: var(--color-mute);
+    font-style: italic;
 }
-.cm-selectionBackground,
-.cm-editor .cm-selectionBackground {
-    background: color-mix(in srgb, var(--color-signal) 30%, transparent) !important;
+[data-slide-scope] .hljs-emphasis {
+    font-style: italic;
 }
-.cm-cursor {
-    border-left-color: var(--color-signal) !important;
+[data-slide-scope] .hljs-strong {
+    font-weight: 700;
 }
-.cm-tooltip {
-    background: var(--color-panel-2) !important;
-    border: 1px solid var(--color-line-2) !important;
+
+/* Monaco (VS Code) shell — the editor pane blends into the panel chrome.
+   Monaco owns its own theming via the vs/vs-dark themes set in lib/monaco.ts. */
+.monaco-editor .overflow-guard {
+    border-radius: 0 0 0 4px;
 }

@@ -31,12 +31,22 @@ export function SlideCanvas({
     className = '',
 }: SlideCanvasProps) {
     const outerRef = useRef<HTMLDivElement>(null)
-    const [fit, setFit] = useState(1)
+    const [fit, setFit] = useState({ scale: 1, x: 0, y: 0 })
 
     useEffect(() => {
         const el = outerRef.current
         if (!el) return
-        const measure = () => setFit(el.clientWidth / STAGE_W)
+        // letterbox: the whole 1280x720 stage is always visible and centered,
+        // whatever aspect ratio the container has (stage window, cockpit,
+        // rail thumbnails) — so every surface shows the true slide
+        const measure = () => {
+            const scale = Math.min(el.clientWidth / STAGE_W, el.clientHeight / STAGE_H)
+            setFit({
+                scale,
+                x: (el.clientWidth - STAGE_W * scale) / 2,
+                y: (el.clientHeight - STAGE_H * scale) / 2,
+            })
+        }
         measure()
         const ro = new ResizeObserver(measure)
         ro.observe(el)
@@ -65,7 +75,7 @@ export function SlideCanvas({
                     left: 0,
                     width: STAGE_W,
                     height: STAGE_H,
-                    transform: `scale(${fit})`,
+                    transform: `translate(${fit.x}px, ${fit.y}px) scale(${fit.scale})`,
                     transformOrigin: 'top left',
                 }}
             >

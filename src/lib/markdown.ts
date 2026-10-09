@@ -1,8 +1,16 @@
 import { marked } from 'marked'
+import { highlightCode } from './highlight.ts'
 
-marked.setOptions({
+marked.use({
     gfm: true,
     breaks: true,
+    renderer: {
+        // fenced code blocks are syntax-highlighted (hljs-* token classes,
+        // themed in styles/global.css) instead of rendered as plain text
+        code({ text, lang }) {
+            return `<pre><code class="hljs">${highlightCode(text, lang)}</code></pre>\n`
+        },
+    },
 })
 
 /**

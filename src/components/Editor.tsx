@@ -1,7 +1,6 @@
 import { computed, signal } from '@preact/signals'
 import { useEffect, useRef } from 'preact/hooks'
 import type { Deck, Slide } from '../db/schema.ts'
-
 import { openPresentation } from '../lib/present.ts'
 import { layouts } from '../lib/layouts.ts'
 import {
@@ -16,11 +15,9 @@ import {
     updateDeck,
     updateSlide,
 } from '../db/repository.ts'
-import type { EditorView } from '@codemirror/view'
 import { navigate } from '../state.ts'
 import { SlideCanvas } from './SlideCanvas.tsx'
 import { CodeEditor, type CodeLanguage } from './CodeEditor.tsx'
-import { MarkdownToolbar } from './MarkdownToolbar.tsx'
 import { openContextMenu } from './ContextMenu.tsx'
 
 const deck = signal<Deck | null>(null)
@@ -29,8 +26,6 @@ const activeId = signal<string | null>(null)
 const tab = signal<CodeLanguage | 'deck'>('markdown')
 const status = signal<'idle' | 'dirty' | 'saving' | 'saved'>('idle')
 const savedAt = signal<number | null>(null)
-const editorView = signal<EditorView | null>(null)
-const layoutPickerOpen = signal(false)
 const dragId = signal<string | null>(null)
 const dropTargetId = signal<string | null>(null)
 
@@ -123,7 +118,6 @@ export function Editor({ deckId }: { deckId: string }) {
         await reloadSlides()
         activeId.value = slide.id
         tab.value = 'markdown'
-        layoutPickerOpen.value = false
     }
 
     async function onDropSlide(targetId: string) {
@@ -213,7 +207,20 @@ export function Editor({ deckId }: { deckId: string }) {
 
             <div class="flex min-h-0 flex-1">
                 {/* Slide rail */}
-                <aside class="flex w-56 shrink-0 flex-col border-r border-line bg-ink-2">
+                <aside
+                    class="flex w-56 shrink-0 flex-col border-r border-line bg-ink-2"
+                    onContextMenu={(e) =>
+                        openContextMenu(e, [
+                            {
+                                label: 'New',
+                                submenu: layouts.map((layout) => ({
+                                    label: `${layout.name} · ${layout.hint}`,
+                                    onSelect: () => void onAddSlide(layout.id),
+                                })),
+                            },
+                        ])
+                    }
+                >
                     <div class="chip flex items-center justify-between px-3 py-2 text-mute">
                         slides <span>{slides.value.length}</span>
                     </div>
@@ -288,45 +295,12 @@ export function Editor({ deckId }: { deckId: string }) {
                                         className="rounded-t-sm"
                                     />
                                 </button>
-                                <div class="flex items-center gap-1 px-2 py-1.5">
-                                    <span class="chip w-5 shrink-0 text-mute">{i + 1}</span>
-                                    {s.id === activeId.value ? (
-                                        <input
-                                            class="chip min-w-0 flex-1 rounded-sm bg-ink px-1.5 py-0.5 text-bone outline-none"
-                                            value={s.name}
-                                            onInput={(e) =>
-                                                patchSlide(s.id, { name: e.currentTarget.value })
-                                            }
-                                            spellcheck={false}
-                                        />
-                                    ) : (
-                                        <span class="truncate text-xs text-bone-dim">{s.name}</span>
-                                    )}
+                                <div class="flex items-center px-2 py-1.5">
+                                    <span class="chip text-mute">{i + 1}</span>
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <button
-                        class="chip m-2 rounded-sm border border-dashed border-line-2 py-2 text-bone-dim transition hover:border-signal hover:text-signal"
-                        onClick={() => (layoutPickerOpen.value = !layoutPickerOpen.value)}
-                    >
-                        + add slide &middot; pick layout
-                    </button>
-                    {layoutPickerOpen.value && (
-                        <div class="mx-2 mb-2 grid grid-cols-2 gap-1.5 rounded-sm border border-line bg-panel p-2">
-                            {layouts.map((layout) => (
-                                <button
-                                    key={layout.id}
-                                    class="flex flex-col rounded-sm border border-line px-2 py-2 text-left transition hover:border-signal"
-                                    onClick={() => onAddSlide(layout.id)}
-                                    title={`New slide from ${layout.name} layout`}
-                                >
-                                    <span class="text-xs font-bold">{layout.name}</span>
-                                    <span class="chip text-mute">{layout.hint}</span>
-                                </button>
-                            ))}
-                        </div>
-                    )}
                 </aside>
 
                 {/* Live canvas */}
@@ -345,11 +319,7 @@ export function Editor({ deckId }: { deckId: string }) {
                     ) : (
                         <p class="chip text-mute">add a slide to begin</p>
                     )}
-                    {current && (
-                        <span class="chip absolute bottom-3 left-4 text-mute">
-                            canvas · {current.name}
-                        </span>
-                    )}
+                    {current && <span class="chip absolute bottom-3 left-4 text-mute">canvas</span>}
                 </section>
 
                 {/* Code editor */}
@@ -369,7 +339,6 @@ export function Editor({ deckId }: { deckId: string }) {
                             </button>
                         ))}
                     </div>
-                    {tab.value === 'markdown' && <MarkdownToolbar view={editorView.value} />}
                     <div class="min-h-0 flex-1 overflow-hidden">
                         {current || tab.value === 'deck' ? (
                             <CodeEditor
@@ -377,18 +346,8 @@ export function Editor({ deckId }: { deckId: string }) {
                                 value={editorValue}
                                 language={tab.value === 'deck' ? 'css' : tab.value}
                                 onChange={onEditorChange}
-                                onViewReady={(view) => (editorView.value = view)}
                             />
                         ) : null}
-                    </div>
-                    <div class="chip flex h-8 shrink-0 items-center border-t border-line px-3 text-mute">
-                        <span>
-                            {tab.value === 'deck'
-                                ? 'global stylesheet — scoped into every slide'
-                                : tab.value === 'css'
-                                  ? 'slide stylesheet — scoped to this slide'
-                                  : 'markdown — rendered live on the canvas'}
-                        </span>
                     </div>
                 </section>
             </div>

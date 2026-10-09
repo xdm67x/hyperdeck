@@ -99,7 +99,11 @@ export function Stage({ deckId }: { deckId: string }) {
             ) : (
                 <div
                     class="w-full max-w-full"
-                    style={{ aspectRatio: '16 / 9', maxHeight: '100dvh' }}
+                    style={{
+                        aspectRatio: '16 / 9',
+                        maxHeight: '100dvh',
+                        maxWidth: 'calc(100dvh * 16 / 9)',
+                    }}
                 >
                     <SlideCanvas
                         key={current.id}
