@@ -17,6 +17,7 @@ import {
 } from '../db/repository.ts'
 import { navigate } from '../state.ts'
 import { openPresentation } from '../lib/present.ts'
+import { buildShareUrl } from '../lib/share.ts'
 import { theme, toggleTheme } from '../lib/theme.ts'
 import { SlideCanvas } from './SlideCanvas.tsx'
 import { openContextMenu } from './ContextMenu.tsx'
@@ -120,6 +121,21 @@ export function Dashboard() {
         download(`${slug(deck)}.hyperdeck.md`, md, 'text/markdown')
     }
 
+    async function onShare(deck: Deck) {
+        const md = await exportDeckMarkdown(deck.id)
+        if (!md) return
+        const url = await buildShareUrl(md)
+        try {
+            await navigator.clipboard.writeText(url)
+            alert(
+                `Share link copied to clipboard.\n\nThe deck travels inside the link itself — anyone who opens it gets their own local copy.`,
+            )
+        } catch {
+            // clipboard API unavailable (permission denied / insecure context)
+            prompt('Copy this link to share the deck:', url)
+        }
+    }
+
     // deck cards stop propagation on their own right-click, so this only
     // fires on the empty canvas — the app's global menu
     function onBackgroundMenu(e: Parameters<typeof openContextMenu>[0]) {
@@ -183,6 +199,7 @@ export function Dashboard() {
                                 onRename={(title) => onRename(deck, title)}
                                 onExport={() => onExport(deck)}
                                 onExportMarkdown={() => onExportMarkdown(deck)}
+                                onShare={() => onShare(deck)}
                                 onDelete={() => onDelete(deck)}
                             />
                         ))}
@@ -224,6 +241,7 @@ function DeckCard({
     onRename,
     onExport,
     onExportMarkdown,
+    onShare,
     onDelete,
 }: {
     deck: Deck
@@ -235,6 +253,7 @@ function DeckCard({
     onRename: (title: string) => void
     onExport: () => void
     onExportMarkdown: () => void
+    onShare: () => void
     onDelete: () => void
 }) {
     const first = preview?.slides[0]
@@ -290,6 +309,7 @@ function DeckCard({
                     { label: 'Rename deck…', onSelect: startRename },
                     'separator',
                     { label: 'Duplicate deck', onSelect: onDuplicate },
+                    { label: 'Copy share link', onSelect: onShare },
                     { label: 'Export .json', onSelect: onExport },
                     { label: 'Export .md', onSelect: onExportMarkdown },
                     'separator',
