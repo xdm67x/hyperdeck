@@ -17,7 +17,7 @@ import {
 } from '../db/repository.ts'
 import { navigate } from '../state.ts'
 import { openPresentation } from '../lib/present.ts'
-import { buildShareUrl } from '../lib/share.ts'
+import { buildShareUrl, type ShareMode } from '../lib/share.ts'
 import { theme, toggleTheme } from '../lib/theme.ts'
 import { SlideCanvas } from './SlideCanvas.tsx'
 import { openContextMenu } from './ContextMenu.tsx'
@@ -121,14 +121,16 @@ export function Dashboard() {
         download(`${slug(deck)}.hyperdeck.md`, md, 'text/markdown')
     }
 
-    async function onShare(deck: Deck) {
+    async function onShare(deck: Deck, mode: ShareMode) {
         const md = await exportDeckMarkdown(deck.id)
         if (!md) return
-        const url = await buildShareUrl(md)
+        const url = await buildShareUrl(md, mode)
         try {
             await navigator.clipboard.writeText(url)
             alert(
-                `Share link copied to clipboard.\n\nThe deck travels inside the link itself — anyone who opens it gets their own local copy.`,
+                mode === 'stage'
+                    ? `Stage link copied to clipboard.\n\nAnyone who opens it watches the deck presented straight from the link — it imports as their own local copy.`
+                    : `Share link copied to clipboard.\n\nThe deck travels inside the link itself — anyone who opens it gets their own local copy.`,
             )
         } catch {
             // clipboard API unavailable (permission denied / insecure context)
@@ -199,7 +201,7 @@ export function Dashboard() {
                                 onRename={(title) => onRename(deck, title)}
                                 onExport={() => onExport(deck)}
                                 onExportMarkdown={() => onExportMarkdown(deck)}
-                                onShare={() => onShare(deck)}
+                                onShare={(mode) => onShare(deck, mode)}
                                 onDelete={() => onDelete(deck)}
                             />
                         ))}
@@ -253,7 +255,7 @@ function DeckCard({
     onRename: (title: string) => void
     onExport: () => void
     onExportMarkdown: () => void
-    onShare: () => void
+    onShare: (mode: ShareMode) => void
     onDelete: () => void
 }) {
     const first = preview?.slides[0]
@@ -309,7 +311,8 @@ function DeckCard({
                     { label: 'Rename deck…', onSelect: startRename },
                     'separator',
                     { label: 'Duplicate deck', onSelect: onDuplicate },
-                    { label: 'Copy share link', onSelect: onShare },
+                    { label: 'Copy share link', onSelect: () => onShare('edit') },
+                    { label: 'Copy stage link', onSelect: () => onShare('stage') },
                     { label: 'Export .json', onSelect: onExport },
                     { label: 'Export .md', onSelect: onExportMarkdown },
                     'separator',

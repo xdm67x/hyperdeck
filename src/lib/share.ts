@@ -9,9 +9,20 @@
  *
  * Hash format: `#share=<version><payload>` where version is
  * `z` (deflate-compressed, base64url) or `r` (raw, encodeURIComponent).
+ * An optional `&stage` suffix opens the deck directly in Stage mode.
  */
 
 const SHARE_PREFIX = '#share='
+
+/** How a share link opens after import: editor or straight to Stage. */
+export type ShareMode = 'edit' | 'stage'
+
+const MODE_SUFFIX: Record<ShareMode, string> = { edit: '', stage: '&stage' }
+
+export interface ShareHash {
+    payload: string
+    mode: ShareMode
+}
 
 type ShareVersion = 'z' | 'r'
 
@@ -46,11 +57,16 @@ async function inflate(bytes: Uint8Array): Promise<string> {
     return await new Response(stream).text()
 }
 
-/** Extract the shared payload from a location hash, if any. */
-export function parseShareHash(hash: string): string | null {
+/** Extract the shared payload and open mode from a location hash, if any. */
+export function parseShareHash(hash: string): ShareHash | null {
     if (!hash.startsWith(SHARE_PREFIX)) return null
-    const payload = hash.slice(SHARE_PREFIX.length)
-    return payload || null
+    let rest = hash.slice(SHARE_PREFIX.length)
+    let mode: ShareMode = 'edit'
+    if (rest.endsWith('&stage')) {
+        mode = 'stage'
+        rest = rest.slice(0, -'&stage'.length)
+    }
+    return rest ? { payload: rest, mode } : null
 }
 
 /** Encode deck markdown into the `#share=` payload string. */
@@ -72,7 +88,7 @@ export async function decodeSharePayload(payload: string): Promise<string> {
 }
 
 /** Build a full shareable URL for a deck's markdown. */
-export async function buildShareUrl(md: string): Promise<string> {
+export async function buildShareUrl(md: string, mode: ShareMode = 'edit'): Promise<string> {
     const payload = await encodeSharePayload(md)
-    return `${location.origin}${location.pathname}${SHARE_PREFIX}${payload}`
+    return `${location.origin}${location.pathname}${SHARE_PREFIX}${payload}${MODE_SUFFIX[mode]}`
 }

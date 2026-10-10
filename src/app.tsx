@@ -24,7 +24,7 @@ export function App() {
             ) : r.view === 'presenter' ? (
                 <Presenter key={r.deckId} deckId={r.deckId} />
             ) : r.view === 'shared' ? (
-                <SharedImport key={r.payload} payload={r.payload} />
+                <SharedImport key={r.payload} payload={r.payload} mode={r.mode} />
             ) : (
                 <Dashboard />
             )}

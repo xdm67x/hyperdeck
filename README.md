@@ -16,7 +16,8 @@ with plain CSS, and present them in the browser — no exports, no proprietary f
   no server or account required.
 - **Backendless share links** — any deck compresses into a URL fragment
   (`#share=…`), so a deck travels inside the link itself. Opening a share link
-  imports the deck as a local copy; no server or account involved.
+  imports the deck as a local copy; stage links (`#share=…&stage`) open it
+  straight in presentation mode. No server or account involved.
 - **Light/dark theme** — respects your system preference, with a manual toggle
   and no flash of the wrong scheme on load.
 - **Single-file interchange** — a deck serializes to one plain-markdown file

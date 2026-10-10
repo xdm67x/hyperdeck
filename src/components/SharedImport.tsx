@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'preact/hooks'
-import { decodeSharePayload } from '../lib/share.ts'
+import { decodeSharePayload, type ShareMode } from '../lib/share.ts'
 import { importDeckMarkdown } from '../db/repository.ts'
 import { navigate } from '../state.ts'
 
 /**
  * Landing view for `#share=...` links. The deck markdown travels inside the
  * URL hash; this view decodes it, imports it as a local copy, and opens the
- * editor. The shared deck becomes the viewer's own — edits never propagate
- * back to the sender.
+ * editor — or, for `&stage` links, the Stage. The shared deck becomes the
+ * viewer's own — edits never propagate back to the sender.
  */
-export function SharedImport({ payload }: { payload: string }) {
+export function SharedImport({ payload, mode }: { payload: string; mode: ShareMode }) {
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
@@ -19,7 +19,11 @@ export function SharedImport({ payload }: { payload: string }) {
                 const md = await decodeSharePayload(payload)
                 const deck = await importDeckMarkdown(md)
                 if (!alive) return
-                navigate({ view: 'editor', deckId: deck.id })
+                navigate(
+                    mode === 'stage'
+                        ? { view: 'stage', deckId: deck.id }
+                        : { view: 'editor', deckId: deck.id },
+                )
             } catch (err) {
                 if (!alive) return
                 setError(err instanceof Error ? err.message : String(err))

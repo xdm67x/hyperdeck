@@ -1,12 +1,12 @@
 import { signal, computed } from '@preact/signals'
-import { parseShareHash } from './lib/share.ts'
+import { parseShareHash, type ShareMode } from './lib/share.ts'
 
 export type Route =
     | { view: 'dashboard' }
     | { view: 'editor'; deckId: string }
     | { view: 'stage'; deckId: string }
     | { view: 'presenter'; deckId: string }
-    | { view: 'shared'; payload: string }
+    | { view: 'shared'; payload: string; mode: ShareMode }
 
 export const route = signal<Route>({ view: 'dashboard' })
 
@@ -15,7 +15,7 @@ export const saveState = signal<'idle' | 'saving' | 'saved'>('idle')
 
 export function parseHash(hash: string): Route {
     const shared = parseShareHash(hash)
-    if (shared !== null) return { view: 'shared', payload: shared }
+    if (shared !== null) return { view: 'shared', ...shared }
     const parts = hash.replace(/^#\/?/, '').split('/').filter(Boolean)
     const [view, deckId] = parts
     if (view === 'editor' && deckId) return { view: 'editor', deckId }
