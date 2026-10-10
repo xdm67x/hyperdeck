@@ -121,21 +121,38 @@ export function Dashboard() {
         download(`${slug(deck)}.hyperdeck.md`, md, 'text/markdown')
     }
 
+    async function copyToClipboard(text: string, message: string) {
+        try {
+            await navigator.clipboard.writeText(text)
+            alert(message)
+        } catch {
+            // clipboard API unavailable (permission denied / insecure context)
+            prompt('Copy this:', text)
+        }
+    }
+
     async function onShare(deck: Deck, mode: ShareMode) {
         const md = await exportDeckMarkdown(deck.id)
         if (!md) return
         const url = await buildShareUrl(md, mode)
-        try {
-            await navigator.clipboard.writeText(url)
-            alert(
-                mode === 'stage'
-                    ? `Stage link copied to clipboard.\n\nAnyone who opens it watches the deck presented straight from the link — it imports as their own local copy.`
-                    : `Share link copied to clipboard.\n\nThe deck travels inside the link itself — anyone who opens it gets their own local copy.`,
-            )
-        } catch {
-            // clipboard API unavailable (permission denied / insecure context)
-            prompt('Copy this link to share the deck:', url)
-        }
+        await copyToClipboard(
+            url,
+            mode === 'stage'
+                ? `Stage link copied to clipboard.\n\nAnyone who opens it watches the deck presented straight from the link — it imports as their own local copy.`
+                : `Share link copied to clipboard.\n\nThe deck travels inside the link itself — anyone who opens it gets their own local copy.`,
+        )
+    }
+
+    async function onEmbed(deck: Deck) {
+        const md = await exportDeckMarkdown(deck.id)
+        if (!md) return
+        const url = await buildShareUrl(md, 'stage')
+        const title = deck.title.replace(/"/g, '&quot;')
+        const snippet = `<iframe src="${url}" title="${title}" loading="lazy" allowfullscreen style="width:100%;aspect-ratio:16/9;border:0"></iframe>`
+        await copyToClipboard(
+            snippet,
+            `Embed code copied to clipboard.\n\nPaste it into any HTML page or markdown that allows iframes — the deck presents straight from the link. Note: GitHub strips <iframe> tags from READMEs; link the stage URL there instead.`,
+        )
     }
 
     // deck cards stop propagation on their own right-click, so this only
@@ -202,6 +219,7 @@ export function Dashboard() {
                                 onExport={() => onExport(deck)}
                                 onExportMarkdown={() => onExportMarkdown(deck)}
                                 onShare={(mode) => onShare(deck, mode)}
+                                onEmbed={() => onEmbed(deck)}
                                 onDelete={() => onDelete(deck)}
                             />
                         ))}
@@ -244,6 +262,7 @@ function DeckCard({
     onExport,
     onExportMarkdown,
     onShare,
+    onEmbed,
     onDelete,
 }: {
     deck: Deck
@@ -256,6 +275,7 @@ function DeckCard({
     onExport: () => void
     onExportMarkdown: () => void
     onShare: (mode: ShareMode) => void
+    onEmbed: () => void
     onDelete: () => void
 }) {
     const first = preview?.slides[0]
@@ -313,6 +333,7 @@ function DeckCard({
                     { label: 'Duplicate deck', onSelect: onDuplicate },
                     { label: 'Copy share link', onSelect: () => onShare('edit') },
                     { label: 'Copy stage link', onSelect: () => onShare('stage') },
+                    { label: 'Copy embed code', onSelect: onEmbed },
                     { label: 'Export .json', onSelect: onExport },
                     { label: 'Export .md', onSelect: onExportMarkdown },
                     'separator',
