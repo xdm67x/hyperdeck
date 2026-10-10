@@ -138,7 +138,7 @@ export function Dashboard() {
         await copyToClipboard(
             url,
             mode === 'stage'
-                ? `Stage link copied to clipboard.\n\nAnyone who opens it watches the deck presented straight from the link — it imports as their own local copy.`
+                ? `Stage link copied to clipboard.\n\nAnyone who opens it watches the deck presented straight from the link — nothing is added to their library.`
                 : `Share link copied to clipboard.\n\nThe deck travels inside the link itself — anyone who opens it gets their own local copy.`,
         )
     }

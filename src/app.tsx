@@ -5,6 +5,7 @@ import { Editor } from './components/Editor.tsx'
 import { Stage } from './components/Stage.tsx'
 import { Presenter } from './components/Presenter.tsx'
 import { SharedImport } from './components/SharedImport.tsx'
+import { SharedStage } from './components/SharedStage.tsx'
 import { ContextMenuHost } from './components/ContextMenu.tsx'
 import { ThemeToggle } from './components/ThemeToggle.tsx'
 
@@ -14,6 +15,8 @@ export function App() {
     }, [])
 
     const r = route.value
+    // stage and shared-stage render full-bleed; no floating theme toggle there
+    const stageLike = r.view === 'stage' || (r.view === 'shared' && r.mode === 'stage')
 
     return (
         <>
@@ -24,11 +27,15 @@ export function App() {
             ) : r.view === 'presenter' ? (
                 <Presenter key={r.deckId} deckId={r.deckId} />
             ) : r.view === 'shared' ? (
-                <SharedImport key={r.payload} payload={r.payload} mode={r.mode} />
+                r.mode === 'stage' ? (
+                    <SharedStage key={r.payload} payload={r.payload} />
+                ) : (
+                    <SharedImport key={r.payload} payload={r.payload} />
+                )
             ) : (
                 <Dashboard />
             )}
-            {r.view !== 'stage' && <ThemeToggle />}
+            {!stageLike && <ThemeToggle />}
             <ContextMenuHost />
         </>
     )

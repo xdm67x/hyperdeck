@@ -13,11 +13,27 @@ const index = signal(0)
  * Main Stage — the audience-facing window of Presenter Mode.
  * Renders slides letterboxed at 16:9, navigates by keyboard/click, and
  * follows HYPERDECK_SLIDE_CHANGE events broadcast by the presenter cockpit.
+ *
+ * Two ways to feed it: `deckId` loads a deck from IndexedDB (Presenter Mode),
+ * or `source` renders an in-memory deck — used by share links and iframe
+ * embeds, which present straight from the URL and persist nothing.
  */
-export function Stage({ deckId }: { deckId: string }) {
+export interface DeckSource {
+    deck: Deck
+    slides: Slide[]
+}
+
+export function Stage({ deckId, source }: { deckId?: string; source?: DeckSource }) {
     const handleRef = useRef<SyncHandle | null>(null)
 
     useEffect(() => {
+        if (source) {
+            deck.value = source.deck
+            slides.value = source.slides
+            index.value = 0
+            return
+        }
+        if (!deckId) return
         let alive = true
         ;(async () => {
             const d = await getDeck(deckId)
@@ -29,9 +45,12 @@ export function Stage({ deckId }: { deckId: string }) {
         return () => {
             alive = false
         }
-    }, [deckId])
+    }, [deckId, source])
 
     useEffect(() => {
+        // Presenter-cockpit sync only applies to DB-backed decks; share
+        // links and embeds render standalone, with no cockpit to follow.
+        if (!deckId) return
         const handle = connectSync((msg) => {
             if (
                 msg.type === 'HYPERDECK_SLIDE_CHANGE' &&
@@ -47,6 +66,13 @@ export function Stage({ deckId }: { deckId: string }) {
         handleRef.current = handle
         // announce current position so a late-joining cockpit can catch up
         emitSlideChange(handle, deckId, index.value)
+        return () => {
+            handleRef.current = null
+            handle.close()
+        }
+    }, [deckId])
+
+    useEffect(() => {
         const onKey = (e: KeyboardEvent) => {
             if (
                 e.key === 'ArrowRight' ||
@@ -71,15 +97,13 @@ export function Stage({ deckId }: { deckId: string }) {
         window.addEventListener('keydown', onKey)
         return () => {
             window.removeEventListener('keydown', onKey)
-            handleRef.current = null
-            handle.close()
         }
-    }, [deckId])
+    }, [])
 
     function setIndex(next: number) {
         if (next < 0 || next >= slides.value.length || next === index.value) return
         index.value = next
-        emitSlideChange(handleRef.current, deckId, next)
+        if (deckId) emitSlideChange(handleRef.current, deckId, next)
     }
 
     function go(dir: -1 | 1) {
