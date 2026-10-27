@@ -24,6 +24,9 @@ jobs:
 
             - uses: jdx/mise-action@2d8d4cafcbd33be2ea37d2b6f5ad595363d1f1ca # v5.1.1
 
+            - name: Install dependencies
+              run: mise exec -- bun install --frozen-lockfile
+
             - name: Build
               # project pages serve under /hyperdeck/, so override vite's root base
               run: mise run build -- --base=/hyperdeck/
