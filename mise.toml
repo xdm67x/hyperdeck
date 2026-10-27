@@ -1,26 +1,26 @@
 [tools]
-deno = "2.9.7"
+bun = "1.4.3"
 
 [tasks.build]
 description = "Build for production"
-run = "deno task build"
+run = "bun run build"
 
 [tasks.dev]
 description = "Start the dev server"
-run = "deno task dev"
+run = "bun run dev"
 
 [tasks.preview]
 description = "Preview the production build"
-run = "deno task preview"
+run = "bun run preview"
 
 [tasks.lint]
 description = "Lint with oxlint"
-run = "deno task lint"
+run = "bun run lint"
 
 [tasks.fmt]
 description = "Format with oxfmt"
-run = "deno task fmt"
+run = "bun run fmt"
 
 [tasks."fmt:check"]
 description = "Check formatting without writing"
-run = "deno task fmt:check"
+run = "bun run fmt:check"

@@ -110,10 +110,7 @@ export function ContextMenuHost() {
                             style={{
                                 top: Math.min(
                                     rowTop(i),
-                                    window.innerHeight -
-                                        top -
-                                        flyoutRows(item.submenu) * rowH -
-                                        12,
+                                    window.innerHeight - top - flyoutRows(item.submenu) * rowH - 12,
                                 ),
                                 maxHeight: 'calc(100dvh - 16px)',
                             }}

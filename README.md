@@ -26,24 +26,25 @@
 
 ## Tech stack
 
-| Layer     | Tool                                          |
-| --------- | --------------------------------------------- |
-| Runtime   | [Deno](https://deno.land)                     |
-| Bundler   | Vite 6                                        |
-| UI        | Preact + `@preact/signals`                    |
-| Styling   | Tailwind CSS 4                                |
-| Editor    | Monaco Editor                                 |
-| Markdown  | marked + highlight.js                         |
-| Storage   | Dexie (IndexedDB)                             |
-| Lint/Fmt  | oxlint / oxfmt                                |
+| Layer    | Tool                       |
+| -------- | -------------------------- |
+| Runtime  | [Bun](https://bun.com)     |
+| Bundler  | Vite 6                     |
+| UI       | Preact + `@preact/signals` |
+| Styling  | Tailwind CSS 4             |
+| Editor   | Monaco Editor              |
+| Markdown | marked + highlight.js      |
+| Storage  | Dexie (IndexedDB)          |
+| Lint/Fmt | oxlint / oxfmt             |
 
 ## Getting started
 
 Requires [mise](https://mise.jdx.dev) — this repo ships a `mise.toml` that pins
-Deno and defines all tasks. (With [Deno](https://deno.com) installed directly,
-the equivalent `deno task <name>` commands also work.)
+Bun and defines all tasks. (With [Bun](https://bun.com) installed directly,
+the equivalent `bun run <name>` commands also work.)
 
 ```sh
+bun install      # install dependencies
 mise run dev     # start the dev server
 ```
 
@@ -64,7 +65,9 @@ mise run fmt:check   # check formatting without writing
 ```
 ├── index.html              # entry document, theme bootstrap
 ├── vite.config.ts          # Vite + Preact + Tailwind config
-├── deno.json               # tasks, dependency imports, compiler options
+├── package.json            # scripts, dependencies
+├── tsconfig.json           # TypeScript and JSX compiler options
+├── bun.lock                # lockfile
 └── src
     ├── main.tsx            # mount point
     ├── app.tsx             # hash-based routing (dashboard / editor / stage / presenter)
@@ -83,12 +86,15 @@ A deck round-trips through a single markdown file:
 <!-- hyperdeck:deck "Deck title" -->
 
 <!-- hyperdeck:global-css -->
+
 ...deck-wide stylesheet...
 
 <!-- hyperdeck:slide "Slide name" -->
+
 ...slide markdown...
 
 <!-- hyperdeck:css -->
+
 ...slide stylesheet...
 ```
 

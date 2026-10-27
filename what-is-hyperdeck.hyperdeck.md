@@ -48,7 +48,7 @@ WHAT IS HYPERDECK — A GUIDED TOUR
 
 # HyperDeck
 
-A native **HTML/CSS** presentation studio. Write slides in plain markdown, style them with scoped CSS, present them in the browser — *no exports, no proprietary formats, no server.*
+A native **HTML/CSS** presentation studio. Write slides in plain markdown, style them with scoped CSS, present them in the browser — _no exports, no proprietary formats, no server._
 
 <span class="hint">press &rarr; to advance<span class="caret"></span></span>
 
@@ -261,12 +261,15 @@ p:nth-of-type(2) {
 ```markdown
 <!-- hyperdeck:deck "Roadmap" -->      # the deck, and its name
 <!-- hyperdeck:global-css -->         # deck-wide stylesheet
+
 .slide { color: #221d15; }
 
 <!-- hyperdeck:slide "Opening" -->     # one slide, in markdown
+
 # Hello, world
 
 <!-- hyperdeck:css -->                # ...and its own stylesheet
+
 h1 { animation: fade-up 0.6s both; }
 ```
 
@@ -346,7 +349,7 @@ pre code .hljs-tag { color: #ff8a50; }
 
 <!-- hyperdeck:slide "Motion is a first-class citizen" -->
 
-## Motion is a *first-class citizen*
+## Motion is a _first-class citizen_
 
 Each slide carries its own **scoped stylesheet** — `@keyframes` included — so animation travels with the content, and no rule can ever leak into a sibling slide.
 
@@ -776,10 +779,10 @@ p {
 HyperDeck ships a first-class scripting surface: `window.hyperdeck`. Everything the UI can do, an agent can do — no DOM scraping required.
 
 ```js
-const deck = await hyperdeck.importMarkdown(md)  // this deck arrived this way
-await hyperdeck.updateSlide(id, { css: "..." })  // patch a slide, live
-hyperdeck.open(deck.id)                         // editor view
-hyperdeck.present(deck.id)                      // stage + cockpit, in sync
+const deck = await hyperdeck.importMarkdown(md) // this deck arrived this way
+await hyperdeck.updateSlide(id, { css: '...' }) // patch a slide, live
+hyperdeck.open(deck.id) // editor view
+hyperdeck.present(deck.id) // stage + cockpit, in sync
 ```
 
 <div class="chips"><span>versioned API on window.hyperdeck</span><span>JSON + markdown interchange</span></div>
@@ -865,7 +868,7 @@ pre code .hljs-params { color: #c9c0af; }
 
 > Decks are written, not exported.
 
-## Go make something *bold*.
+## Go make something _bold_.
 
 <span class="cta">dashboard &rarr; right-click &rarr; import deck<span class="caret"></span></span>
 

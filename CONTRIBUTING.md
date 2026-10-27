@@ -6,15 +6,15 @@ commit message convention, and how to open a pull request.
 ## Prerequisites
 
 - [mise](https://mise.jdx.dev) — the repo's toolchain runs entirely through
-  `mise run <task>`, and `mise.toml` pins the Deno version. (With
-  [Deno](https://deno.com) installed directly, the equivalent
-  `deno task <name>` commands also work.)
-- No `npm install` needed — dependencies are declared in `deno.json` and
-  the node_modules directory is managed automatically.
+  `mise run <task>`, and `mise.toml` pins the Bun version. (With
+  [Bun](https://bun.com) installed directly, the equivalent
+  `bun run <name>` commands also work.)
+- Dependencies are declared in `package.json` and pinned by `bun.lock`.
 
 ## Development workflow
 
 ```sh
+bun install         # install dependencies
 mise run dev        # start the dev server with HMR
 mise run lint       # oxlint
 mise run fmt        # oxfmt (writes)
@@ -59,25 +59,25 @@ specification. Every commit message must match:
 
 ### Types
 
-| Type       | Purpose                                                      |
-| ---------- | ------------------------------------------------------------ |
-| `feat`     | New feature (correlates with a minor version bump)           |
-| `fix`      | Bug fix (correlates with a patch bump)                       |
-| `docs`     | Documentation only                                           |
-| `style`    | Formatting, whitespace, naming — no logic change             |
-| `refactor` | Code change that neither fixes a bug nor adds a feature      |
-| `perf`     | Performance improvement                                      |
-| `test`     | Adding or correcting tests                                   |
-| `build`    | Build system or external dependency changes                  |
-| `ci`       | CI configuration changes                                    |
-| `chore`    | Maintenance that doesn't touch src or tests                  |
-| `revert`   | Reverting a previous commit                                  |
+| Type       | Purpose                                                 |
+| ---------- | ------------------------------------------------------- |
+| `feat`     | New feature (correlates with a minor version bump)      |
+| `fix`      | Bug fix (correlates with a patch bump)                  |
+| `docs`     | Documentation only                                      |
+| `style`    | Formatting, whitespace, naming — no logic change        |
+| `refactor` | Code change that neither fixes a bug nor adds a feature |
+| `perf`     | Performance improvement                                 |
+| `test`     | Adding or correcting tests                              |
+| `build`    | Build system or external dependency changes             |
+| `ci`       | CI configuration changes                                |
+| `chore`    | Maintenance that doesn't touch src or tests             |
+| `revert`   | Reverting a previous commit                             |
 
 ### Rules
 
 - Subject line: lowercase, imperative mood, no trailing period, max ~72 characters.
-  - Good: `feat: add slide reordering in editor`
-  - Bad: `Added slide reordering`
+    - Good: `feat: add slide reordering in editor`
+    - Bad: `Added slide reordering`
 - Use a scope when it clarifies the area touched: `fix(editor): keep caret inside CSS block`.
 - Breaking changes: add `!` after the type/scope (`feat!:`) or describe the change
   in a `BREAKING CHANGE:` footer.
@@ -98,10 +98,10 @@ refactor(db): extract deck queries into repository
 1. **Fork and branch.** Create a branch from the default branch, named after
    the change:
 
-   ```
-   git switch -c feat/slide-thumbnails
-   git switch -c fix/104-presenter-timer-drift
-   ```
+    ```
+    git switch -c feat/slide-thumbnails
+    git switch -c fix/104-presenter-timer-drift
+    ```
 
 2. **Keep it small.** One logical change per PR. If you find yourself writing
    "and also", consider splitting it.
@@ -111,24 +111,24 @@ refactor(db): extract deck queries into repository
 
 4. **Verify locally:**
 
-   ```sh
-   mise run lint
-   mise run fmt:check
-   mise run build
-   ```
+    ```sh
+    mise run lint
+    mise run fmt:check
+    mise run build
+    ```
 
 5. **Push and open the PR:**
 
-   ```sh
-   git push -u origin <branch-name>
-   ```
+    ```sh
+    git push -u origin <branch-name>
+    ```
 
-   Then open the PR against the default branch with:
-   - a title in conventional-commit form (`feat: ...`, `fix(scope): ...`);
-   - a description covering **what** changed, **why**, and **how to test it**;
-   - linked issues (`Closes #123`) where applicable;
-   - screenshots or short clips for anything visual — HyperDeck is a UI-heavy
-     project, so before/after images speed up review a lot.
+    Then open the PR against the default branch with:
+    - a title in conventional-commit form (`feat: ...`, `fix(scope): ...`);
+    - a description covering **what** changed, **why**, and **how to test it**;
+    - linked issues (`Closes #123`) where applicable;
+    - screenshots or short clips for anything visual — HyperDeck is a UI-heavy
+      project, so before/after images speed up review a lot.
 
 6. **Review.** Respond to feedback with new commits, not force-pushes that
    hide the history, unless the reviewer asks for a rebase. Once approved and
